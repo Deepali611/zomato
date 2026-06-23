@@ -1,0 +1,13 @@
+# Generated / local artifacts
+.python-embed/
+python-embed.zip
+get-pip.py
+data/zomato.csv
+.env
+docs/test-results.xml
+.pytest_cache/
+node-portable/
+__pycache__/
+*.pyc
+
+

@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+@import "tailwindcss";
+
+
+:root {
+  --background: #0f131d;
+  --foreground: #dfe2f1;
+}
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+}
+
+body {
+  background-color: #0f131d;
+  color: #dfe2f1;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Hide scrollbars globally */
+::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Custom design system styling overrides */
+.glass-card {
+  background: rgba(49, 53, 64, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(144, 143, 160, 0.2);
+}
+
+.bg-glow-indigo {
+  position: fixed;
+  top: -10%;
+  right: -10%;
+  width: 60vw;
+  height: 60vh;
+  background: radial-gradient(circle, rgba(192, 193, 255, 0.06) 0%, rgba(192, 193, 255, 0) 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.bg-glow-emerald {
+  position: fixed;
+  bottom: -10%;
+  left: -10%;
+  width: 50vw;
+  height: 50vh;
+  background: radial-gradient(circle, rgba(78, 222, 163, 0.05) 0%, rgba(78, 222, 163, 0) 70%);
+  z-index: -1;
+  pointer-events: none;
+}
