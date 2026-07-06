@@ -40,7 +40,7 @@ class APIHandler(BaseHTTPRequestHandler):
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": f"Failed to load locations: {e}"}).encode("utf-8"))
-        elif self.path in ("/", "/api", "/health", "/api/health"):
+        elif self.path in ("/", "/api", "/health", "/api/health", "/api/v1/health"):
             # Determine database status
             try:
                 restaurant_count = len(service.repository.get_all())
