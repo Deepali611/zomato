@@ -40,6 +40,19 @@ class APIHandler(BaseHTTPRequestHandler):
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": f"Failed to load locations: {e}"}).encode("utf-8"))
+        elif self.path in ("/", "/api", "/health"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "status": "healthy",
+                "message": "Zomato AI Recommendation Engine API is running.",
+                "endpoints": {
+                    "locations": "/api/locations",
+                    "recommend": "/api/recommend (POST)"
+                }
+            }).encode("utf-8"))
         else:
             self.send_response(404)
             self.send_header("Content-Type", "application/json")
