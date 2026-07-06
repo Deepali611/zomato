@@ -1,8 +1,18 @@
-# Ignore backend and docker files during Vercel builds
-backend/
+# Ignore python and backend files to prevent Vercel from scanning them for serverless functions
+src/
+data/
+tests/
+scripts/
 Dockerfile
-docs/
-.env
-.env.example
+requirements-backend.txt
+pytest.ini
+.python-embed/
+node-portable/
 .vscode/
 .pytest_cache/
+.env
+.env.example
+python-embed.zip
+get-pip.py
+README.md
+docs/
