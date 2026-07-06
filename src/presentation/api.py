@@ -4,6 +4,7 @@ import sys
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
+from urllib.parse import urlparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -26,7 +27,8 @@ class APIHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path == "/api/locations":
+        parsed_path = urlparse(self.path).path
+        if parsed_path == "/api/locations":
             try:
                 unique_locations = sorted(list({r.location for r in service.repository.get_all() if r.location}))
                 self.send_response(200)
@@ -111,7 +113,8 @@ class APIHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"error": "Endpoint not found"}).encode("utf-8"))
 
     def do_POST(self):
-        if self.path == "/api/recommend":
+        parsed_path = urlparse(self.path).path
+        if parsed_path == "/api/recommend":
             content_length = int(self.headers["Content-Length"])
             body = self.rfile.read(content_length)
             try:
