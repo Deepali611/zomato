@@ -1,56 +1,57 @@
-# Zomato AI Restaurant Recommendations
+# Zomato AI Restaurant Recommendations (Monorepo)
 
-AI-powered restaurant recommendations using the Zomato dataset and **Groq** for ranking and explanations.
+An AI-powered restaurant discovery and recommendation engine. This repository is organized as a decoupled monorepo:
+* **Frontend**: Next.js (TypeScript/React) located at the root level `/`.
+* **Backend**: Python 3.10 HTTP API Server located inside `/backend`.
 
-## Setup
+---
 
+## 🎨 Frontend Setup (Next.js)
+
+The frontend is hosted at the root level.
+
+### Installation
 ```bash
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env and set GROQ_API_KEY
+npm install
 ```
 
-Ensure `data/restaurant.parquet` exists (or the app will download from Hugging Face on first run):
-
+### Run Locally
 ```bash
-python scripts/generate_restaurant_parquet.py
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+### Configuration
+Set the following environment variable in a `.env.local` file or in your hosting provider (e.g. Vercel):
+* `NEXT_PUBLIC_API_URL`: The URL of the backend API (defaults to `http://localhost:8000`).
+
+---
+
+## ⚙️ Backend Setup (Python API)
+
+The backend is located in `/backend`.
+
+### Installation
+```bash
+cd backend
+.python-embed/python.exe -m pip install -r requirements.txt
 ```
 
-## Run
-
-**Streamlit UI**
-
-```bash
-streamlit run src/presentation/streamlit_app.py
+### Configuration
+Create a `backend/.env` file with the following variables:
+```env
+GROQ_API_KEY=your_groq_api_key_here
+LLM_PROVIDER=groq
+LLM_MODEL=llama-3.3-70b-versatile
 ```
 
-**CLI**
-
+### Run API Server Locally
 ```bash
-python -m src.presentation.cli --location Bangalore --budget medium --cuisine Italian --min-rating 4.0
+.python-embed/python.exe backend/src/presentation/api.py
 ```
+The API server will listen on `http://localhost:8000`.
 
-## Environment
-
-See `.env.example` for `GROQ_API_KEY`, `LLM_MODEL`, `MAX_CANDIDATES`, `TOP_K`, `LLM_TIMEOUT_SECONDS`, and `LOG_LEVEL`.
-
-## Testing (Phase 5)
-
+### Run Tests
 ```bash
-# Full automated suite (mocked LLM)
-python scripts/run_tests.py
-
-# Or directly
-python -m pytest -v -m "not e2e"
-
-# E2E smoke (parquet + Groq if key set)
-python scripts/smoke_e2e.py
-
-# Live Groq API check
-python scripts/smoke_test_groq.py
-
-# Optional live E2E pytest (requires GROQ_API_KEY)
-python -m pytest -v -m e2e
+.python-embed/python.exe backend/scripts/run_tests.py
 ```
-
-See `docs/KNOWN_LIMITATIONS.md` and `docs/TEST_REPORT.md` (generated after `run_tests.py`).

@@ -1,0 +1,19 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Project specifics
+.python-embed/
+node-portable/
+python-embed.zip
+get-pip.py
+.pytest_cache/
+test-results.xml
