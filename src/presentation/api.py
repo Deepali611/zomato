@@ -1,6 +1,7 @@
 """JSON API server for Next.js recommendations query."""
 
 import sys
+import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
 from pathlib import Path
@@ -110,9 +111,9 @@ class APIHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"error": "Endpoint not found"}).encode("utf-8"))
 
 
-def run(port=8000):
-    server = HTTPServer(("localhost", port), APIHandler)
-    print(f"API server running on http://localhost:{port}")
+def run(host="0.0.0.0", port=8000):
+    server = HTTPServer((host, port), APIHandler)
+    print(f"API server running on http://{host}:{port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -122,5 +123,10 @@ def run(port=8000):
 
 
 if __name__ == "__main__":
-    # Standard port is 8000
-    run()
+    # Read port from environment variable (standard for platforms like Railway)
+    port_env = os.getenv("PORT", "8000")
+    try:
+        port = int(port_env)
+    except ValueError:
+        port = 8000
+    run(host="0.0.0.0", port=port)

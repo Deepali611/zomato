@@ -1,6 +1,6 @@
 # Test Report
 
-- **Generated:** 2026-06-23T13:52:48.569706+00:00
+- **Generated:** 2026-07-06T05:04:48.736609+00:00
 - **Status:** PASSED
 - **JUnit XML:** `docs\test-results.xml`
 
@@ -53,6 +53,6 @@ tests/test_repository.py::test_filter_applies_predicate PASSED           [ 96%]
 tests/test_repository.py::test_get_by_ids_preserves_order_and_skips_unknown PASSED [100%]
 
 - generated xml file: C:\Users\patil\Downloads\zomato\zomato\docs\test-results.xml -
-====================== 29 passed, 1 deselected in 2.24s =======================
+====================== 29 passed, 1 deselected in 17.76s ======================
 
 ```

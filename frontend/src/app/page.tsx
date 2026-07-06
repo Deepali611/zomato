@@ -74,6 +74,8 @@ const MOCK_CARD_IMAGES = [
   "https://lh3.googleusercontent.com/aida-public/AB6AXuAtrFR9F_tERih7a2zJXRhYIg2Hel0mSV97KOxmqC1dKYRayaLa9Aoy_045OGqDOlNjTHHN_y1BCo4Zc7rn846wRLjrJfe2Ks2kaMhYpo4cDqBbX7LLUFehEvXwCYDWYAaj9jcb5E1UYKFkSoEy1ejLvBGBuT7zmDVEpT4EmXGa_PW7q2WTrJNYR_EONNiUN3qXHiEwIXmai-ZEzNxoH3QovsBsRefsOZaTyn7UnzrPwkLpCEfeu8k27GcInW8D3JHeHvHVqRuO46w"
 ];
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function Home() {
   const [locations, setLocations] = useState<string[]>(LOCATIONS);
   const [location, setLocation] = useState("Indiranagar");
@@ -91,7 +93,7 @@ export default function Home() {
   const [degraded, setDegraded] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/locations")
+    fetch(`${API_BASE_URL}/api/locations`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch locations");
         return res.json();
@@ -136,7 +138,7 @@ export default function Home() {
     setWarnings([]);
 
     try {
-      const response = await fetch("http://localhost:8000/api/recommend", {
+      const response = await fetch(`${API_BASE_URL}/api/recommend`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

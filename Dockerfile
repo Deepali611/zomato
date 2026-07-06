@@ -4,7 +4,7 @@ FROM python:3.10-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PORT=8501
+ENV PORT=8000
 
 # Set the working directory
 WORKDIR /app
@@ -21,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code
 COPY . .
 
-# Expose Streamlit's default port
-EXPOSE 8501
+# Expose default port
+EXPOSE 8000
 
 # Run the application
-CMD streamlit run src/presentation/streamlit_app.py --server.port=$PORT --server.address=0.0.0.0
+CMD ["python", "src/presentation/api.py"]

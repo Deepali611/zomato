@@ -1,173 +1,141 @@
-# Streamlit Deployment Plan: Zomato AI Restaurant Recommendations
+# Deployment Plan: Zomato AI Restaurant Recommendations
 
-This document outlines the step-by-step deployment plan to host the **Zomato AI Restaurant Recommendations** web application on Streamlit.
+This document outlines the step-by-step plan to deploy the **Zomato AI Restaurant Recommendations** application as a decoupled web app, with the **Python JSON API backend** deployed on **Railway** and the **Next.js frontend** deployed on **Vercel**.
 
 ---
 
 ## 📋 Deployment Metadata
 
-| Component | Detail |
-| :--- | :--- |
-| **Target Platform** | Streamlit Community Cloud (Recommended) or Docker-based hosting (Render, HF Spaces, GCP/AWS) |
-| **Main App File** | `src/presentation/streamlit_app.py` |
-| **Primary Dependency File** | `requirements.txt` |
-| **Data Dependencies** | `data/restaurant.parquet` (preprocessed in repository) or dynamically from Hugging Face |
-| **LLM Provider** | Groq API (`llama-3.3-70b-versatile`) |
+| Component | Technology | Target Host | Main Entry Point | Primary Environment Config |
+| :--- | :--- | :--- | :--- | :--- |
+| **Frontend** | Next.js (TypeScript/React) | **Vercel** | `frontend/` (Root Directory) | `NEXT_PUBLIC_API_URL` |
+| **Backend** | Python 3.10 HTTP API Server | **Railway** | `src/presentation/api.py` | `GROQ_API_KEY`, `PORT` |
+| **Database/Data** | In-Memory Dataset (Parquet) | Railway Container | `data/restaurant.parquet` | - |
+| **LLM Provider** | Groq API (`llama-3.3-70b-versatile`) | Groq Serverless | API Requests | `GROQ_API_KEY` |
 
 ---
 
-## 🚀 Deployment Strategy 1: Streamlit Community Cloud (Recommended)
+## 🌐 Architecture Overview
 
-Streamlit Community Cloud is the easiest and most performant way to host this application. It connects directly to your GitHub repository, builds the environment using `requirements.txt`, and serves the app with automated SSL and scaling.
+Below is the execution flow of the decoupled deployment model:
 
-### Step 1: Push Codebase to GitHub
-Ensure the codebase is committed to a public or private GitHub repository.
+```mermaid
+graph TD
+    Client(User Browser) -->|HTTP Request / UI Interaction| Vercel[Next.js Frontend on Vercel]
+    Client -->|API Call: fetch/POST /api/recommend| Railway[Python API Backend on Railway]
+    Railway -->|Cached Queries / Recommendations| LocalData[(In-Memory Parquet Dataset)]
+    Railway -->|Generate Fit Explanation| Groq[Groq Cloud LLM API]
+```
+
+---
+
+## ⚙️ Backend Deployment: Railway
+
+Railway is a cloud platform that allows you to provision infrastructure, build from a `Dockerfile`, and deploy apps automatically from your GitHub repository.
+
+### Step 1: Push Local Updates to GitHub
+Make sure all your latest files, including the updated root [Dockerfile](file:///c:/Users/patil/Downloads/zomato/zomato/Dockerfile) and [src/presentation/api.py](file:///c:/Users/patil/Downloads/zomato/zomato/src/presentation/api.py), are committed and pushed to your remote repository:
+```bash
+git add .
+git commit -m "Configure api.py and Dockerfile for Railway backend deployment"
+git push origin main
+```
+
+### Step 2: Configure Railway Service
+1. Log in to [Railway.app](https://railway.app).
+2. Click **"New Project"** -> **"Deploy from GitHub repo"**.
+3. Select your `zomato` repository.
+4. Railway will automatically detect the root `Dockerfile` and start a container build.
+
+### Step 3: Add Backend Environment Variables
+In the Railway dashboard, navigate to the **Variables** tab for the service and add the following variables:
+
+| Variable Name | Value / Description | Required / Optional |
+| :--- | :--- | :--- |
+| `GROQ_API_KEY` | `gsk_your_actual_groq_api_key_here` | **Required** (For AI explanations) |
+| `PORT` | `8000` (Railway will overwrite this automatically with a dynamic port) | **Required** (Handled dynamically) |
+| `LLM_PROVIDER` | `groq` | Optional |
+| `LLM_MODEL` | `llama-3.3-70b-versatile` | Optional |
 
 > [!IMPORTANT]
-> Do **NOT** commit your `.env` file containing the `GROQ_API_KEY` to GitHub. It is ignored by default in [.gitignore](file:///c:/Users/patil/Downloads/zomato/zomato/.gitignore).
+> The backend [src/presentation/api.py](file:///c:/Users/patil/Downloads/zomato/zomato/src/presentation/api.py) is preconfigured to bind to `0.0.0.0` and read the `PORT` env variable. Exposing `0.0.0.0` is essential for Railway to route external internet requests to the container.
 
-Verify that the preprocessed dataset is included in your commit:
-* **File to include:** `data/restaurant.parquet`
-* Checking this file in ensures fast startup times (under 2 seconds) and avoids potential rate limits or download timeouts from Hugging Face during serverless cold starts.
-
-### Step 2: Sign in to Streamlit Community Cloud
-1. Go to [share.streamlit.io](https://share.streamlit.io/).
-2. Sign in using your GitHub account.
-
-### Step 3: Deploy the App
-1. Once logged in, click the **"New app"** button in the top-right corner of the workspace.
-2. Fill in the deployment details:
-   * **Repository:** Select your `zomato` repository.
-   * **Branch:** Select your main branch (e.g., `main` or `master`).
-   * **Main file path:** Set this to `src/presentation/streamlit_app.py` (ensure you use forward slashes).
-   * **App URL:** (Optional) Custom subdomain name if available.
-
-### Step 4: Configure Environment Variables & Secrets
-Streamlit Community Cloud does not use `.env` files. Instead, it provides a secure **Secrets** management interface that injects values directly into environment variables.
-
-1. Click on **"Advanced settings..."** before deploying (or go to **Settings > Secrets** in the app dashboard after deploying).
-2. Paste the following configuration in the text area (TOML format):
-
-```toml
-# Groq LLM API Key (Required)
-GROQ_API_KEY = "your_actual_groq_api_key_here"
-
-# Model and Engine Configurations (Optional overrides)
-LLM_PROVIDER = "groq"
-LLM_MODEL = "llama-3.3-70b-versatile"
-MAX_CANDIDATES = 20
-TOP_K = 5
-FILTER_RELAX_ON_EMPTY = true
-LLM_TIMEOUT_SECONDS = 30
-LLM_MAX_RETRIES = 1
-LOG_LEVEL = "INFO"
-```
-
-3. Click **"Save"**.
-
-> [!TIP]
-> The application uses `os.getenv()` in [src/config.py](file:///c:/Users/patil/Downloads/zomato/zomato/src/config.py) to read settings. Streamlit automatically exposes any key-value pairs defined in the TOML Secrets manager as system environment variables, making this integration seamless.
-
-### Step 5: Launch!
-Click the **"Deploy!"** button. Streamlit will:
-1. Spin up a container.
-2. Install Python dependencies from [requirements.txt](file:///c:/Users/patil/Downloads/zomato/zomato/requirements.txt).
-3. Load the pre-processed `data/restaurant.parquet` dataset.
-4. Launch the application server.
+### Step 4: Expose the Railway Public URL
+1. Go to your service's **Settings** tab.
+2. Under **Networking**, click **"Generate Domain"** (or configure a custom domain).
+3. Save the generated URL (e.g., `https://zomato-production.up.railway.app`). This is the backend API URL you will pass to Vercel.
 
 ---
 
-## 🐳 Deployment Strategy 2: Containerized Deployment (Docker)
+## 🎨 Frontend Deployment: Vercel
 
-If you prefer self-hosting (e.g., on Render, AWS EC2, GCP Cloud Run, or Hugging Face Spaces), you can containerize the app using Docker.
+Vercel is the native hosting platform for Next.js applications. It compiles static and dynamic pages with serverless optimizations.
 
-### 1. Create a `Dockerfile`
-Create a `Dockerfile` in the root of the project:
+### Step 1: Configure Vercel Project
+1. Log in to [Vercel.com](https://vercel.com).
+2. Click **"Add New..."** -> **"Project"**.
+3. Import your `zomato` repository.
+4. On the **Configure Project** screen, set the following critical settings:
+   * **Framework Preset:** `Next.js`
+   * **Root Directory:** Click **Edit** and select the `frontend` subdirectory (since the Next.js app sits inside `frontend/`).
 
-```dockerfile
-# Use an official Python runtime as a parent image
-FROM python:3.10-slim
+### Step 2: Set Environment Variables
+In the **Environment Variables** section on Vercel, add the following key:
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PORT=8501
+* **Key:** `NEXT_PUBLIC_API_URL`
+* **Value:** The Railway backend URL generated in Step 4 above (e.g., `https://zomato-production.up.railway.app`).
+* *Note: Make sure to exclude a trailing slash (use `...railway.app` instead of `...railway.app/`).*
 
-# Set the working directory
-WORKDIR /app
+### Step 3: Build & Deploy
+Click **"Deploy"**. Vercel will:
+1. Navigate into the `frontend/` directory.
+2. Install Node.js dependencies (`package.json`).
+3. Compile and build the Next.js production bundle.
+4. Spin up your frontend app on a custom Vercel URL (e.g., `https://zomato-frontend.vercel.app`).
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+---
 
-# Copy requirements and install
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+## 🔒 CORS Configuration Details
 
-# Copy the rest of the application code
-COPY . .
+To prevent cross-origin issues between your frontend (`vercel.app`) and backend (`railway.app`), CORS headers are fully integrated inside the backend server [src/presentation/api.py](file:///c:/Users/patil/Downloads/zomato/zomato/src/presentation/api.py):
 
-# Expose Streamlit's default port
-EXPOSE 8501
-
-# Run the application
-CMD streamlit run src/presentation/streamlit_app.py --server.port=$PORT --server.address=0.0.0.0
-```
-
-### 2. Build and Run Locally
-```bash
-# Build the Docker image
-docker build -t zomato-recommendations .
-
-# Run the container (passing environment secrets)
-docker run -p 8501:8501 --env-file .env zomato-recommendations
-```
+* **OPTIONS preflight checks** are intercepted and responded to with:
+  ```python
+  self.send_header("Access-Control-Allow-Origin", "*")
+  self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS, GET")
+  self.send_header("Access-Control-Allow-Headers", "Content-Type")
+  ```
+* **GET and POST payloads** are sent back with `Access-Control-Allow-Origin: *` headers, ensuring modern browsers do not block recommendations.
 
 ---
 
 ## 🛠️ Post-Deployment Verification
 
-After the app finishes building and shows the UI, run these smoke checks to verify functionality:
+After both platforms complete their deployments, execute these smoke checks:
 
-1. **Verify Home Page Load:** Check if the sidebar loaded correctly with "Concierge Search", the background animations are active, and the 3 mock restaurant cards are loaded on first paint.
-2. **Test Search Request:**
-   * Select a location (e.g., `Indiranagar`).
-   * Choose a budget category.
-   * Input a cuisine (e.g., `Italian`).
-   * Enter a custom constraint (e.g., `rooftop garden`).
+1. **Test Frontend Landing Page:**
+   * Navigate to the Vercel app URL.
+   * Verify the UI displays correctly, background glow animations are functional, and the preprocessed restaurant list loads.
+2. **Retrieve Locations (GET):**
+   * Inspect the network logs in your browser.
+   * Ensure that `GET /api/locations` returns the location array (e.g., `["Indiranagar", "BTM", ...]`) successfully.
+3. **Submit Recommendation Form (POST):**
+   * Change filters (e.g., select `Indiranagar`, enter `Italian`, specify `romantic rooftop`).
    * Click **"Generate"**.
-3. **Verify AI Rank & Explanations:**
-   * Ensure that the top header section shows "AI Insights for your Evening".
-   * Check if recommendation cards display custom "Why this fits: ..." explanations powered by Groq.
+   * Verify that recommendations are successfully fetched from Railway, LLM explanations are visible, and the application loads in under 2 seconds.
 
 ---
 
-## ⚠️ Troubleshooting & Common Pitfalls
+## ⚠️ Troubleshooting
 
-### 1. "ModuleNotFoundError: No module named 'src'"
-* **Reason:** Python package resolution path issue.
-* **Fix:** The code in [src/presentation/streamlit_app.py](file:///c:/Users/patil/Downloads/zomato/zomato/src/presentation/streamlit_app.py) contains a sys-path insertion script at the very top:
-  ```python
-  ROOT = Path(__file__).resolve().parent.parent.parent
-  if str(ROOT) not in sys.path:
-      sys.path.insert(0, str(ROOT))
-  ```
-  Ensure this block remains unmodified and is executed before importing any internal `src.*` modules.
+### 1. `Fetch failed / NetworkError` in Frontend
+* **Cause:** The `NEXT_PUBLIC_API_URL` variable was not configured correctly on Vercel, or is pointing to `localhost`.
+* **Fix:** Go to Vercel -> Project Settings -> Environment Variables, verify `NEXT_PUBLIC_API_URL` contains the valid `https` Railway address, and trigger a redeployment.
 
-### 2. Streamlit Secrets and TOML Encoding
-* **Reason:** Pasting keys with leading/trailing spaces or invalid TOML syntax.
-* **Fix:** Do not wrap your API keys in double quotes twice. If formatting as TOML, use `GROQ_API_KEY = "gsk_..."`.
+### 2. `Connection Refused` on Railway Backend
+* **Cause:** The Python server failed to bind to `0.0.0.0` or did not pick up the `$PORT` environment variable.
+* **Fix:** Confirm your backend [Dockerfile](file:///c:/Users/patil/Downloads/zomato/zomato/Dockerfile) CMD is set to run `python src/presentation/api.py` and that the code reads `os.getenv("PORT")` correctly.
 
-### 3. File System Path Resolution
-* **Reason:** In serverless containers, relative paths can sometimes fail if the working directory changes.
-* **Fix:** The dataset path in [src/config.py](file:///c:/Users/patil/Downloads/zomato/zomato/src/config.py) resolves dynamically relative to the code location:
-  ```python
-  root = Path(__file__).resolve().parents[1]
-  parquet_path = root / "data" / "restaurant.parquet"
-  ```
-  This guarantees standard pathing inside the Docker container or Streamlit runtime.
-
-### 4. "Groq API Key Not Set / Fallback Mode"
-* **Reason:** Env secret did not save properly or is empty.
-* **Fix:** If the `GROQ_API_KEY` environment variable is missing, the app will degrade gracefully, displaying a warning banner and rendering recommendations sorted deterministically by rating. Check the Streamlit logs for: `GROQ_API_KEY is not set. Recommendations will use rating-based fallback.`
+### 3. Rate-Limiting or Groq API Failures
+* **Cause:** Missing or invalid `GROQ_API_KEY` on Railway.
+* **Fix:** Double check the Railway **Variables** tab, enter a valid key, and check service logs for standard fallback messages indicating rating-based sorting.
