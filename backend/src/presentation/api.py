@@ -40,19 +40,69 @@ class APIHandler(BaseHTTPRequestHandler):
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": f"Failed to load locations: {e}"}).encode("utf-8"))
-        elif self.path in ("/", "/api", "/health"):
+        elif self.path in ("/", "/api", "/health", "/api/health"):
+            # Determine database status
+            try:
+                restaurant_count = len(service.repository.get_all())
+                db_status = "loaded" if restaurant_count > 0 else "empty"
+                db_message = f"{restaurant_count} restaurants loaded successfully."
+            except Exception as e:
+                db_status = "error"
+                db_message = f"Failed to check repository: {e}"
+                restaurant_count = 0
+
+            # Determine LLM status
+            api_key = service.settings.groq_api_key
+            if api_key:
+                masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "configured"
+            else:
+                masked_key = "not_found"
+
+            llm_configured = service._llm_client is not None
+            llm_warning = service.llm_warning
+
+            if llm_configured and not llm_warning:
+                llm_status = "healthy"
+                llm_message = f"Groq LLM is configured with model '{service.settings.llm_model}'."
+            else:
+                llm_status = "warning"
+                llm_message = llm_warning or "Groq LLM client is not initialized."
+
+            # Determine overall status
+            if db_status == "loaded" and llm_status == "healthy":
+                overall_status = "healthy"
+            elif db_status == "loaded":
+                overall_status = "degraded"
+            else:
+                overall_status = "unhealthy"
+
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
-            self.wfile.write(json.dumps({
-                "status": "healthy",
-                "message": "Zomato AI Recommendation Engine API is running.",
+            
+            health_report = {
+                "status": overall_status,
+                "service": "Zomato AI Recommendation Engine API",
+                "database": {
+                    "status": db_status,
+                    "count": restaurant_count,
+                    "message": db_message
+                },
+                "llm": {
+                    "status": llm_status,
+                    "provider": service.settings.llm_provider,
+                    "model": service.settings.llm_model,
+                    "key_configured": api_key is not None,
+                    "key_masked": masked_key,
+                    "message": llm_message
+                },
                 "endpoints": {
                     "locations": "/api/locations",
                     "recommend": "/api/recommend (POST)"
                 }
-            }).encode("utf-8"))
+            }
+            self.wfile.write(json.dumps(health_report).encode("utf-8"))
         else:
             self.send_response(404)
             self.send_header("Content-Type", "application/json")
